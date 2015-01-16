@@ -1587,6 +1587,10 @@ function custom_configuration()
 
     case "$proposal" in
         pacemaker)
+            # raise timeout to give more grace time when running in virtual machines (random timeout failures with timeout of 60s)
+            sed -i -e "/^\s*attribute \+:timeout/ s/\b60\b/180/" /opt/dell/chef/cookbooks/crowbar-pacemaker/resources/sync_mark.rb
+            knife cookbook upload crowbar-pacemaker -o /opt/dell/chef/cookbooks/
+
             # multiple matches possible, so separate if's, to allow to configure mapped clusters
             if [[ $proposaltypemapped =~ .*data.* ]] ; then
                 hacloud_configure_data_cluster
