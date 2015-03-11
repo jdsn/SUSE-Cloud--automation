@@ -1,5 +1,6 @@
 #!/bin/bash
 
+: ${CROWBAR_DIR:=$CROWBAR_DIR}
 d="./dev"
 #d="echo $d"
 E=
@@ -37,7 +38,7 @@ function usage()
 
 function clear_crowbar_checkout()
 {
-  pushd ~/crowbar
+  pushd $CROWBAR_DIR
   $E rm -rf .ci-tracking/
   $E git clean -f
   $E $d switch
@@ -47,7 +48,7 @@ function clear_crowbar_checkout()
 
 function crowbar_refetch()
 {
-  pushd ~/crowbar
+  pushd $CROWBAR_DIR
   $E git clean -f
   $E $d switch
   $E $d fetch
@@ -62,7 +63,7 @@ function make_prlist()
   rel=${1:-RELEASE}
   prfile=~/prlist
   echo "creating $prfile for $rel"
-  pushd ~/crowbar
+  pushd $CROWBAR_DIR
   $E $d pull-requests list | grep "($rel" | sed -e "s/^[0-9]\+: //" > $prfile
   $E tac $prfile > ${prfile}.tac
   popd
@@ -101,7 +102,7 @@ function check_exit()
 
 function clean_barclamps()
 {
-  crowdir="~/crowbar"
+  crowdir="$CROWBAR_DIR"
   if [ ! -d $crowdir ] ; then
     echo "Error: No crowbar checkout found at $crowdir"
     exit 11
@@ -129,7 +130,7 @@ EOCLOUDRC
 function ssh_key_check()
 {
   mkdir -p ~/.ssh
-  if ! [ -f ~/.ssh/github-susecloudapi-id_rsa  && -f ~/.ssh/github-susecloudapi-id_rsa.pub ] ; then
+  if ! [ -f ~/.ssh/github-susecloudapi-id_rsa  -a -f ~/.ssh/github-susecloudapi-id_rsa.pub ] ; then
     echo "Error: The SSH Key files of the user 'susecloudapi' are missing."
     echo "Please copy them to ~/.ssh here manually."
     exit 10
@@ -146,7 +147,7 @@ EOSSH
 
 function netrc_check()
 {
-  if ! [ `grep "github.com login susecloudapi" ~/.netrc | wc -l`  == 2 ] ; then
+  if ! grep -q "login susecloudapi" ~/.netrc ; then
     echo "Error: The netrc file for the github user susecloudapi is missing."
     echo "Please copy it here manually."
   fi
@@ -161,30 +162,31 @@ function prepare()
     $E zypper in -y 'bash>=4.2'
   fi
 
-  $E [ -x ~/bin/update_automation ] || curl https://raw.github.com/SUSE-Cloud/automation/master/scripts/jenkins/update_automation | bash
+  $E [ -x ~/bin/update_automation ] || curl -o ~/bin/update_automation  https://raw.githubusercontent.com/SUSE-Cloud/automation/master/scripts/jenkins/update_automation
+  $E chmod +x ~/bin/update_automation
   $E update_automation mkcloud
   $E [ -f ~/cloud.rc ] || defaultcloudrc ~/cloud.rc
 
   $E git config --global user.email doesnotexist@example.com
   $E git config --global user.name "SUSE Cloud API"
 
-  $E cd ~
-  if [ -d ~/crowbar/.git ] ; then
+  if [ -d $CROWBAR_DIR/.git ] ; then
     echo "crowbar repo is already cloned"
-    $E cd crowbar
+    $E pushd $CROWBAR_DIR
   else
+    $E pushd `dirname $CROWBAR_DIR`
     $E git clone ssh://git@github.com/crowbar/crowbar.git
-    $E pushd crowbar
+    $E cd crowbar
     $E $d setup --no-github
     $E $d switch $rel/crowbar_default_build
     $E $d pull-requests fetch
-    popd
   fi
+  popd
 }
 
 function crowbar_clean_check()
 {
-  pushd ~/crowbar
+  pushd $CROWBAR_DIR
   if ! $d switch ; then
     $E clean_barclamps
     $d switch
@@ -305,7 +307,7 @@ function smoke()
   PRstring=${1:-none-none-none}
   BASE=~/tobacco
 
-  pushd ~/crowbar
+  pushd $CROWBAR_DIR
   pr=
   echo "==def fetch latest changes:"
   $E $d fetch
@@ -356,7 +358,7 @@ function smoke()
   check_exit $? "dev pull-requests checkout $pr_id: $PR"
   popd
 
-  $E rsync -a --exclude ".git" --exclude ".ci-tracking" ~/crowbar $BASE
+  $E rsync -a --exclude ".git" --exclude ".ci-tracking" $CROWBAR_DIR $BASE
   pushd $BASE
 
   pushd $BASE/crowbar
@@ -387,7 +389,7 @@ function prpending()
 {
   rel=${1:-none}
 
-  pushd ~/crowbar
+  pushd $CROWBAR_DIR
   $d pull-requests list | grep ": ($rel "
   popd
 }
