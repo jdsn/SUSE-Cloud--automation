@@ -101,6 +101,14 @@ class GHClientHandler
       get_own_pull_requests('open', ['', 'pending', 'error', 'failure']))
   end
 
+  def sync_repos_to_developers_team
+    # authenticated user needs to be an Owner of SUSE-Cloud
+    @client.organization_repositories('SUSE-Cloud').each do |r|
+      puts r.name
+      puts @client.add_team_repository(1541628, 'SUSE-Cloud/' + r.name).inspect
+    end
+  end
+
 end
 
 options = {}
@@ -149,6 +157,8 @@ def require_parameter(param, message)
 end
 
 case options[:action]
+  when 'sync-repos'
+    ghc.sync_repos_to_developers_team
   when 'list-unseen-prs'
     ghc.show_unseen_pull_requests
   when 'list-rebuild-prs'
