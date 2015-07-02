@@ -284,7 +284,10 @@ EOF
 
 function onadmin()
 {
-    sshrun onadmin_$1
+    # functions can have parameters, so pass on all except $1
+    local cmd=$1
+    shift
+    sshrun onadmin_$cmd "$@"
 }
 
 function cleanup()
@@ -883,6 +886,12 @@ function cloudupgrade_reboot_and_redeploy_clients()
     return $?
 }
 
+function cct()
+{
+    onadmin run_cct "$@"
+    return $?
+}
+
 function usage()
 {
     cat <<EOUSAGE
@@ -1185,7 +1194,7 @@ function sanity_checks()
 ## MAIN ##
 step_aliases="_new_admin _compute _upgrade _testupdate"
 
-allcmds="$step_aliases all all_noreboot instonly plain plain_with_upgrade cleanup setuphost prepare setupadmin prepareinstcrowbar instcrowbar instcrowbarfromgit setupnodes setupcompute instnodes instcompute proposal testsetup rebootcrowbar rebootcloud addupdaterepo runupdate testupdate securitytests crowbarbackup crowbarrestore shutdowncloud restartcloud qa_test help rebootneutron prepare_cloudupgrade cloudupgrade_1st cloudupgrade_2nd cloudupgrade_clients cloudupgrade_reboot_and_redeploy_clients setuplonelynodes crowbar_register"
+allcmds="$step_aliases all all_noreboot instonly plain plain_with_upgrade cleanup setuphost prepare setupadmin prepareinstcrowbar instcrowbar instcrowbarfromgit setupnodes setupcompute instnodes instcompute proposal testsetup rebootcrowbar rebootcloud addupdaterepo runupdate testupdate securitytests crowbarbackup crowbarrestore shutdowncloud restartcloud qa_test help rebootneutron prepare_cloudupgrade cloudupgrade_1st cloudupgrade_2nd cloudupgrade_clients cloudupgrade_reboot_and_redeploy_clients setuplonelynodes crowbar_register cct"
 wantedcmds=$@
 
 function expand_steps()
@@ -1199,7 +1208,7 @@ function expand_steps()
         local found=0
         local onecmd
         for onecmd in $allcmds ; do
-            if [ $onecmd = $cmd ] ; then
+            if [[ $onecmd = $cmd || ( $onecmd = "cct" && $cmd =~ "cct" )  ]] ; then
                 found=1
                 case "$cmd" in
                     setupcompute|instcompute)
@@ -1267,7 +1276,12 @@ for cmd in `echo $steplist` ; do
     echo
     sleep 2
     echo $cmd >> mkcloud.steps.log
-    $cmd
+    # support calls to functions with parameters
+    # this is currently used for the cct function
+    cmd_parameters="${cmd#*+}"
+    cmd_parameters="${cmd_parameters//+/ }"
+    cmd=${cmd%%+*}
+    $cmd $cmd_parameters
     ret=$?
     if [ $ret != 0 ] ; then
         set +x
