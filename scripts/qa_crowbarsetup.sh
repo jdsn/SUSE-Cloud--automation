@@ -3193,6 +3193,31 @@ function onadmin_qa_test()
     return $ret
 }
 
+function onadmin_run_cct()
+{
+    ## FIXME
+    ## - TODO install cucumber and dependencies (may require adding repos)
+    ##   eg. like this:
+    #ensure_packages_installed cucumber ...
+    ## - install 'git-core'
+    ensure_packages_installed git-core
+    ## - git clone $cct_repo
+    pushd /root
+    # default checkout location for mkcloud based setups:
+    mkdir -p github.com/SUSE-Cloud
+    cd github.com/SUSE-Cloud/
+    git clone https://github.com/SUSE-Cloud/cct.git
+    cd cct
+
+    ## - TODO run cct tests defined by parameters
+    echo "This message is a placeholder for the cucumber tests"
+    ret=$?
+
+    popd
+    ## or: ret=$cucumber_result
+    return $ret
+}
+
 # deactivate proposals and forget cloud nodes
 # can be useful for faster testing cycles
 function onadmin_teardown()
