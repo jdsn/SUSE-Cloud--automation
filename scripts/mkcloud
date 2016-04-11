@@ -941,9 +941,15 @@ function onhost_reset_admin()
 function crowbarupgrade_5plus()
 {
     onadmin prepare_crowbar_upgrade
-    crowbarbackup "with_upgrade"
-    export cloudsource=$upgrade_cloudsource
-    crowbarrestore "with_upgrade"
+
+    if iscloudver 5 ; then
+        crowbarbackup "with_upgrade"
+        export cloudsource=$upgrade_cloudsource
+        crowbarrestore "with_upgrade"
+    else
+        export cloudsource=$upgrade_cloudsource
+        onadmin crowbar_live_upgrade
+    fi
 }
 
 function cloudupgrade()

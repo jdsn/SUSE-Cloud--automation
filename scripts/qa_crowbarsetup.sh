@@ -4166,6 +4166,11 @@ function onadmin_crowbarrestore()
     fi
 }
 
+function onadmin_crowbar_live_upgrade()
+{
+    complain 99 "needs to be implemented"
+}
+
 function onadmin_crowbar_nodeupgrade()
 {
     local endpoint
