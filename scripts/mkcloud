@@ -750,30 +750,22 @@ function dist_to_image_name()
     echo "$image.qcow2"
 }
 
+
 # bring up lonely_node(s) in the admin network
 function setuplonelynodes()
 {
     local i
     for i in $(nodes ids lonely) ; do
-        local mac=$(macfunc $i)
-        local lonely_node
-        lonely_node=$cloud-node$i
-        safely ${mkcloud_lib_dir}/libvirt/compute-config $cloud $i $mac 0\
-            "$cephvolumenumber" "$drbdvolume" $compute_node_memory\
-            $controller_node_memory $libvirt_type $vcpus $emulator $vdisk_dir\
-            1 1 > /tmp/$cloud-node$i.xml
-
-        local lonely_disk
-        lonely_disk="$vdisk_dir/${cloud}.node$i"
-
-        onhost_deploy_image "lonely" $(get_lonely_node_dist) $lonely_disk
-        ${mkcloud_lib_dir}/libvirt/vm-start /tmp/${lonely_node}.xml
+        onhost_create_compute_config $i
+        onhost_deploy_image "lonely" $(get_lonely_node_dist) "$vdisk_dir/${cloud}.node$i"
+        ${mkcloud_lib_dir}/libvirt/vm-start /tmp/$cloud-node$i.xml
     done
 }
 
 # register lonely_node against crowbar
 function crowbar_register()
 {
+    local i
     for i in $(nodes ids lonely) ; do
         local mac=$(macfunc $i)
         sshrun "lonelymac=$mac adminip=$adminip onadmin_crowbar_register"
@@ -871,6 +863,35 @@ function restartcloud()
     wait_for_crowbar_ssh
 }
 
+
+
+function onhost_create_compute_config()
+{
+    local number=$1
+    local macaddress=$(macfunc $number)
+        # transport drdb volume information to admin node (needed for proposal of data cluster)
+        # note: data cluster currently only supported with node 1 and 2.
+        drbd_serial=""
+        if [ $drbd_hdd_size != 0 ]; then
+            if [ $number -le 2 ] ; then
+                drbd_serial="$cloud-node$number-drbd"
+                # libvirt does not accept anything other than [:alnum:]_-
+                # for serial strings:
+                drbd_serial=${drbd_serial//[^A-Za-z0-9-_]/_}
+                drbdnode_mac_vol="${drbdnode_mac_vol}+${macaddress}#${drbd_serial}"
+                drbdnode_mac_vol="${drbdnode_mac_vol#+}"
+            fi
+        fi
+
+        local bootorder=3
+        ${mkcloud_lib_dir}/libvirt/compute-config "$cloud" "$number"\
+            "$macaddress" "$controller_raid_volumes" "$cephvolumenumber"\
+            "$drbd_serial" "$compute_node_memory" "$controller_node_memory"\
+            "$libvirt_type" "$vcpus" "$emulator" "$vdisk_dir" "$bootorder"\
+            "$nodenumbercontroller" > /tmp/$cloud-node$number.xml
+}
+
+
 # bring up VMs that will take cloud controller/compute/storage roles
 function setupnodes()
 {
@@ -884,25 +905,7 @@ function setupnodes()
 
     setuppublicnet
     for i in $(nodes ids normal) ; do
-        local macaddress=$(macfunc $i)
-
-        # transport drdb volume information to admin node (needed for proposal of data cluster)
-        drbd_serial=""
-        if [ $drbd_hdd_size != 0 ]; then
-            if [ $i -le 2 ] ; then
-                drbd_serial="$cloud-node$i-drbd"
-                # libvirt does not accept anything other than [:alnum:]_-
-                # for serial strings:
-                drbd_serial=${drbd_serial//[^A-Za-z0-9-_]/_}
-                drbdnode_mac_vol="${drbdnode_mac_vol}+${macaddress}#${drbd_serial}"
-                drbdnode_mac_vol="${drbdnode_mac_vol#+}"
-            fi
-        fi
-
-        ${mkcloud_lib_dir}/libvirt/compute-config $cloud $i $macaddress\
-            $controller_raid_volumes $cephvolumenumber "$drbd_serial"\
-            $compute_node_memory $controller_node_memory $libvirt_type $vcpus\
-            $emulator $vdisk_dir 3 $nodenumbercontroller > /tmp/$cloud-node$i.xml
+        onhost_create_compute_config $i
         ${mkcloud_lib_dir}/libvirt/vm-start /tmp/$cloud-node$i.xml
     done
 
