@@ -1792,8 +1792,11 @@ function onadmin_allocate
         curl http://$clouddata/git/automation/scripts/qa1_nodes_reboot | bash
     fi
 
-    [[ $nodenumber -gt 0 ]] && wait_for 50 10 'test $(get_all_discovered_nodes | wc -l) -ge 1' "first node to be discovered"
-    wait_for 100 10 '[[ $(get_all_discovered_nodes | wc -l) -ge $nodenumber ]]' "all nodes to be discovered"
+
+    ## normal nodes
+    ##
+    [[ $(nodes number normal) -gt 0 ]] && wait_for 50 10 'test $(get_all_discovered_nodes | wc -l) -ge 1' "first node to be discovered"
+    wait_for 100 10 '[[ $(get_all_discovered_nodes | wc -l) -ge $(nodes number normal) ]]' "all nodes to be discovered"
     local n
     for n in `get_all_discovered_nodes` ; do
         wait_for 100 2 "knife node show -a state $n | grep -q discovered" \
@@ -1807,6 +1810,13 @@ function onadmin_allocate
                 "node to be in provisioner proposal"
         fi
     done
+
+    ## lonely nodes
+    ##
+    if [[ $(nodes number lonely) -gt 0 ]] ; then
+        onadmin_crowbar_register $(nodes ids lonely)
+    fi
+
     local controllernodes=(
             $(get_all_discovered_nodes | head -n 2)
         )
