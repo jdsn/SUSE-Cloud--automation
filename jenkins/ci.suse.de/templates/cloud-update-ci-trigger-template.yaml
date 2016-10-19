@@ -1,0 +1,19 @@
+- job-template:
+    name: 'cloud-update-ci-{instance}-trigger'
+    node: cloud-trigger
+
+    triggers:
+      - timed: '0 6 * * *'
+
+    logrotate:
+      numToKeep: 60
+      daysToKeep: -1
+
+    builders:
+      - trigger-builds:
+        - project: cloud-update-ci
+          condition: SUCCESS
+          block: true
+          current-parameters: true
+          predefined-parameters: |
+            instance={instance}

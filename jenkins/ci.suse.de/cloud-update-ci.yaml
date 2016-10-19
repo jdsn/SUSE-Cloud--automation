@@ -14,9 +14,6 @@
               ci.suse.de: deploys all CI jobs on ci.suse.de
               ci.opensuse.org: deploys all CI jobs on ci.opensuse.org
 
-    triggers:
-      - timed: '0 6 * * *'
-
     logrotate:
       numToKeep: 300
       daysToKeep: -1

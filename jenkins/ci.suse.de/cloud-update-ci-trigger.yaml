@@ -1,0 +1,10 @@
+- project:
+    name: cloud-update-ci-ci.suse.de-trigger
+    instance: ci.suse.de
+    jobs:
+        - 'cloud-update-ci-{instance}-trigger'
+- project:
+    name: cloud-update-ci-ci.opensuse.org-trigger
+    instance: ci.opensuse.org
+    jobs:
+        - 'cloud-update-ci-{instance}-trigger'
