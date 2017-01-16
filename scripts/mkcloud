@@ -569,6 +569,16 @@ function restartcloud
     wait_for_crowbar_ssh
 }
 
+function get_nodenumbercontroller
+{
+    local nodenumbercontroller=1
+    if [[ $clusterconfig == *services* ]]; then
+        nodenumbercontroller=`echo ${clusterconfig}\
+            | sed -e "s/^.*services[^:]*=\([[:digit:]]\+\).*/\1/"`
+    fi
+    echo $nodenumbercontroller
+}
+
 # bring up VMs that will take cloud controller/compute/storage roles
 function setupnodes
 {
