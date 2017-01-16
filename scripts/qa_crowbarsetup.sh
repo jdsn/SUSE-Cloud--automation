@@ -2009,6 +2009,12 @@ function onadmin_get_ip_from_dhcp
         END{ if (res=="") exit 1; print res }' $leasefile
 }
 
+
+function get_ip_address_by_node_name
+{
+    knife node show "$1" -a crowbar.network.admin.address | awk '{print $2}'
+}
+
 # register a new node with crowbar_register
 function onadmin_crowbar_register
 {
