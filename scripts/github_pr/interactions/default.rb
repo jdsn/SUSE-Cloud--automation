@@ -121,6 +121,7 @@ module GithubPR
 
   class SetStatusAction < Action
     def action(pull)
+      return # DEBUG
       GithubClient.new(@metadata).set_status(pull.head.sha, @c)
     end
   end
@@ -139,6 +140,7 @@ module GithubPR
       jcmd = @c["job_cmd"]
       jcmd = File.join(@metadata[:config_base_path], @c["job_cmd"]) unless File.exist?(jcmd)
       cmd = [ jcmd, @c["job_name"] ]
+      cmd = ["echo"] + cmd # DEBUG
       cmd
     end
 
